@@ -9,7 +9,8 @@ def Multi_Head_Attention_forward(Q: torch.Tensor,
                                  n_head: int,
                                  device,
                                  attention_mask: Optional[torch.Tensor] = None,
-                                 key_padding_mask: Optional[torch.Tensor] = None, ):
+                                 key_padding_mask: Optional[torch.Tensor] = None,
+                                 memory_key_padding_mask: Optional[torch.tensor] = None):
     '''
 	Q: bs, L, hidden_size
 	K: bs, L, hidden_size
@@ -33,6 +34,15 @@ def Multi_Head_Attention_forward(Q: torch.Tensor,
 
             zeros = torch.zeros(L, L).to(device)
             attention_mask = zeros.masked_fill(key_padding_mask.bool(), value=-torch.inf)
+    if memory_key_padding_mask != None:
+        src_L = K.shape[1]
+        tgt_L = Q.shape[1]
+        bs = Q.shape[0]
+        memory_key_padding_mask = memory_key_padding_mask.view(bs, 1, 1, src_L). \
+                expand(-1, n_head, -1, -1).reshape(bs * n_head, 1, src_L)
+        zeros = torch.zeros(tgt_L, src_L).to(device)
+        attention_mask = zeros.masked_fill(memory_key_padding_mask.bool(), value=-torch.inf)
+
     bs = Q.shape[0]
     Q: torch.tensor = Q.view(Q.shape[0], Q.shape[1], n_head, hidden_size)  # bs,L, n_head, hidden_size
     Q = Q.permute(0, 2, 1, 3).contiguous().view(Q.shape[0] * n_head, Q.shape[1],

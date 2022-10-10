@@ -68,13 +68,15 @@ class Decoder_Multi_Head_Attention(Multi_Head_Attention):
         super().__init__(input_size, n_head, device)
         self.device = device
 
-    def forward(self, Y: torch.tensor, memory: torch.Tensor, key_padding_mask: Optional[torch.tensor] = None):
+    def forward(self, Y: torch.tensor, memory: torch.Tensor, key_padding_mask: Optional[torch.tensor] = None,
+                memory_key_padding_mask: Optional[torch.tensor] = None):
         Q = self.QProject(Y)
         K = self.KProject(memory)
         V = self.VProject(memory)
 
         result = Multi_Head_Attention_forward(Q, K, V, hidden_size=self.hidden_size, n_head=self.n_head,
-                                              device=self.device, key_padding_mask=key_padding_mask)
+                                              device=self.device, key_padding_mask=key_padding_mask,
+                                              memory_key_padding_mask=memory_key_padding_mask)
         return self.Linear(result)
 
 
@@ -110,7 +112,8 @@ class TransformerDecoderLayer(torch.nn.Module):
         self.norm_fnc = torch.nn.LayerNorm(normalized_shape=input_size)
 
     def forward(self, Y: torch.Tensor, memory: torch.Tensor,
-                key_padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+                key_padding_mask: Optional[torch.Tensor] = None,
+                memory_key_padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         '''
         Y: target sequence shifted right by one position
         memory: output of the TransformerEncoder
@@ -121,7 +124,7 @@ class TransformerDecoderLayer(torch.nn.Module):
         decoder_sfa_ = self.masked_multi_head_attention_layer.forward(Y, key_padding_mask)
         decoder_sfa_ = self.norm_mmha_layer(Y + decoder_sfa_)
 
-        encoder_decoeder_attention = self.encd_decd_attention_layer.forward(decoder_sfa_, memory)
+        encoder_decoeder_attention = self.encd_decd_attention_layer.forward(decoder_sfa_, memory, memory_key_padding_mask=memory_key_padding_mask)
         encoder_decoeder_attention = self.norm_ecdc_layer(encoder_decoeder_attention + decoder_sfa_)
 
         ff_output = self.FFLayer(encoder_decoeder_attention)
@@ -142,7 +145,8 @@ class TransformerDecoder(torch.nn.Module):
                                     ffnet_hidden_size=ffnet_hidden_size, device=device)
             for _ in range(n_layers)])
 
-    def forward(self, Y, memory, key_padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, Y, memory, key_padding_mask: Optional[torch.Tensor] = None,
+                memory_key_padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         '''
         Y: target sequence shifted right by one position
         memory: output of the TransformerEncoder
@@ -151,7 +155,7 @@ class TransformerDecoder(torch.nn.Module):
             while performing attention mechanism.
         '''
         for layer in self.TransformerDecoder:
-            Y = layer(Y, memory, key_padding_mask)
+            Y = layer(Y, memory, key_padding_mask, memory_key_padding_mask)
         return Y
 
 

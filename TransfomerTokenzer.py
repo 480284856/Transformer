@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 import os
 import d2l.torch as d2l
@@ -42,6 +44,7 @@ def tokenize_nmt(text, num_examples=None):
 def truncate_pad(line, num_steps, padding_token, vocab):
     """截断或填充文本序列"""
     if len(line) > num_steps:
+        warnings.warn(f'input sequence is too log, so it will be truncated into {num_steps}')
         return line[:num_steps - 1] + [vocab['<eos>']]  # 截断,并保证有一个'<eos>'
     return line + [padding_token] * (num_steps - len(line))
 

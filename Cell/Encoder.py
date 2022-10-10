@@ -28,19 +28,24 @@ class Multi_Head_Attention(torch.nn.Module):
 
         self.device = device
 
-    def forward(self, X: torch.tensor, key_padding_mask: Optional[torch.tensor] = None):
+    def forward(self,
+                X: torch.Tensor,
+                key_padding_mask: Optional[torch.Tensor] = None,
+                src_atten_mask: Optional[torch.Tensor] = None):
         '''
         X: bs, sequence_length, embedding_size
         key_padding_mask: bs, sequence_length
             any non-zero element in this tensor indicates that the token has the same index with the element should be ignored
             while performing attention mechanism.
+        src_atten_mask: L_src,L_src
+            atten_mask for source sequence
         '''
 
         Q = self.QProject(X)
         K = self.KProject(X)
         V = self.VProject(X)
         result = Multi_Head_Attention_forward(Q, K, V, hidden_size=self.hidden_size, n_head=self.n_head,
-                                              key_padding_mask=key_padding_mask, device=self.device)
+                                              key_padding_mask=key_padding_mask, device=self.device,attention_mask=src_atten_mask)
 
         return self.Linear(result)
 
@@ -62,14 +67,19 @@ class TransformerEncoderLayer(torch.nn.Module):
 
         self.norm_fcn = torch.nn.LayerNorm(normalized_shape=d_model)
 
-    def forward(self, X, key_padding_mask: Optional[torch.tensor] = None) -> torch.Tensor:
+    def forward(self,
+                X,
+                key_padding_mask: Optional[torch.tensor] = None,
+                src_atten_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         '''
         X: bs, sequence_length, embedding_size
         key_padding_mask: bs, sequence_length
             any non-zero element in this tensor indicates that the token has the same index with the element should be ignored
             while performing attention mechanism.
+        src_atten_mask: L_src,L_src
+            atten_mask for source sequence
         '''
-        mh_attention = self.MHAttention(X, key_padding_mask=key_padding_mask)
+        mh_attention = self.MHAttention(X, key_padding_mask=key_padding_mask, src_atten_mask=src_atten_mask)
         output_mha = self.norm_mha(mh_attention + X)
         output = self.FFLayer(output_mha)
         return self.norm_fcn(output_mha + output)
@@ -85,14 +95,19 @@ class TransformerEncoder(torch.nn.Module):
             TransformerEncoderLayer(d_model=d_model, n_head=n_head, ffnet_hidden_size=ffnet_hidden_size, device=device)
             for _ in range(n_layers)])
 
-    def forward(self, X, key_padding_mask: Optional[torch.tensor] = None) -> torch.Tensor:
+    def forward(self,
+                X,
+                key_padding_mask: Optional[torch.tensor] = None,
+                src_atten_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         '''
         key_padding_mask: bs, sequence_length
             any non-zero element in this tensor indicates that the token has the same index with the element should be ignored
             while performing attention mechanism.
+        src_atten_mask: L_src,L_src
+            atten_mask for source sequence
         '''
         for layer in self.TransformerEncoder:
-            X = layer(X, key_padding_mask)
+            X = layer(X, key_padding_mask, src_atten_mask)
         return X
 
 
