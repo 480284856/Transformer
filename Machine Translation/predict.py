@@ -4,10 +4,11 @@ import torch
 sys.path.append('X:\Code\Source code of Transformer')
 from config import Config
 from Transformer import Transformer
-from TransfomerTokenzer import truncate_pad,generate_key_padding_mask,load_data_nmt
+from TransfomerTokenzer import truncate_pad, generate_key_padding_mask, load_data_nmt
 
 config = Config()
 config.device = 'cpu'
+
 
 def predict_prepare(X: str, src_vocab, tgt_vocab):
     '''
@@ -22,8 +23,10 @@ def predict_prepare(X: str, src_vocab, tgt_vocab):
     X += ' <eos>'
     src_tokens = X.lower().split(' ')
     src_tokens = [src_vocab[e] for e in src_tokens]
-    X_key_padding_mask = generate_key_padding_mask(1, config.num_steps, torch.tensor([len(src_tokens)])).to(config.device)
-    encoder_input_ids = torch.tensor([truncate_pad(src_tokens, config.num_steps, src_vocab[config.padding_token], src_vocab)])  # bs, num_step
+    X_key_padding_mask = generate_key_padding_mask(1, config.num_steps, torch.tensor([len(src_tokens)])).to(
+        config.device)
+    encoder_input_ids = torch.tensor(
+        [truncate_pad(src_tokens, config.num_steps, src_vocab[config.padding_token], src_vocab)])  # bs, num_step
 
     decoder_input_ids = torch.tensor([[tgt_vocab['<bos>']]], dtype=torch.long)
     return encoder_input_ids, X_key_padding_mask, decoder_input_ids
@@ -40,10 +43,11 @@ def predict(model: Transformer, X: str, src_vocab, tgt_vocab):
     eos_token_id = tgt_vocab[config.eos_token]
     for _ in range(config.generated_sequence_max_length):
         decoder_embeddings = model.decoder_embedding(decoder_input_ids)
-        decoder_logits: torch.Tensor = model.decoder.forward(decoder_embeddings,memory, memory_key_padding_mask=X_key_padding_mask)[0][-1]
+        decoder_logits: torch.Tensor = \
+        model.decoder.forward(decoder_embeddings, memory, memory_key_padding_mask=X_key_padding_mask)[0][-1]
         decoder_logits = model.classfier(decoder_logits)
-        best_token = decoder_logits.argmax().view(1,1)
-        decoder_input_ids = torch.concat([decoder_input_ids,best_token],dim=-1)
+        best_token = decoder_logits.argmax().view(1, 1)
+        decoder_input_ids = torch.concat([decoder_input_ids, best_token], dim=-1)
 
         if best_token.item() == eos_token_id:
             break
@@ -62,7 +66,8 @@ if __name__ == "__main__":
         config.device,
         config.encoder_num_embeddings,
         config.decoder_num_embeddings)
-    model.load_state_dict(torch.load(config.model_state_dict_save_path+'/transformer_epoch16_loss_0.07695',map_location='cpu'))
+    model.load_state_dict(
+        torch.load(config.model_state_dict_save_path + '/transformer_epoch16_loss_0.07695', map_location='cpu'))
     for layer in model.decoder.TransformerDecoder:  # 预测的时候不用遮掩
         layer.masked_multi_head_attention_layer.masked_matrix = None
 
