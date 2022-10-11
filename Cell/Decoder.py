@@ -157,11 +157,3 @@ class TransformerDecoder(torch.nn.Module):
         for layer in self.TransformerDecoder:
             Y = layer(Y, memory, key_padding_mask, memory_key_padding_mask)
         return Y
-
-
-if __name__ == "__main__":
-    Y = torch.randn(size=(2, 30, 512))
-    memory = torch.randn(size=(2, 5, 512))
-    model = TransformerDecoder(d_model=512, n_head=8, n_layers=6, target_sequence_length=30)
-    output = model.forward(Y, memory)
-    print(output.shape)

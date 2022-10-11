@@ -109,10 +109,3 @@ class TransformerEncoder(torch.nn.Module):
         for layer in self.TransformerEncoder:
             X = layer(X, key_padding_mask, src_atten_mask)
         return X
-
-
-if __name__ == "__main__":
-    X = torch.randn(size=(2, 3, 512))
-    model = TransformerEncoder(d_model=512, n_head=8, n_layers=6, ffnet_hidden_size=2048, device='cpu')
-    result = model(X)
-    print(result.shape)
