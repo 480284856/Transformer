@@ -1,0 +1,53 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		{% load static %}
+		<title>英法翻译器</title>
+	</head>
+	<body style="background-image: url({% static 'imgs/pic.jpg' %});
+	background-size:100% 200%;background-repeat:no-repeat;">
+		<style type="text/css">
+			.area0 {
+				width: 80%;
+				height: 55%;
+				text-align: center;		
+			}				
+			.area1 {
+				width: 100%;
+				height: 100%;				
+			}	
+			.english_area {
+				width: 90%;
+				height: 100%;
+				font-size: 1pc;
+			}
+			.franch_area {
+				width: 90%;
+				height: 100%;
+				font-size: 1pc;				
+			}
+			.font { font-family:黑体,monospace,“Microsoft YaHei”,微软雅黑,“MicrosoftJhengHei”,华文细黑,STHeiti,MingLiu }
+
+		</style>
+		<center><h1 class="font">英->法翻译器</h1></center>
+
+		<center>
+		<table class="area0">
+			<form class="english_area" method="POST">
+				{% csrf_token %}
+			<tr class="area1">
+					<td >
+						<textarea class="english_area font" placeholder="type your english words here" name="inputs">{{ orgn_seq }}</textarea>
+					</td>
+				<td >
+					<textarea class="franch_area font" placeholder="translate result will be displayed here">{{ rlt_fra }}</textarea>
+				</td>					
+			</tr>
+			<input type="submit" value="translate" style="width:100px;height:30px">
+			<br>	
+		</form>		
+		</table>
+		</center>
+		
+	</body>
+</html>
